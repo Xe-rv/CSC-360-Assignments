@@ -27,28 +27,17 @@
 #define MAX_LEN 80
 #define MAX_CMD 4
 
-int counter = 0; // keeps track of amount of inputs
-char* cmd_args[MAX_CMD][MAX_ARG]; // array of tokenized inputs
-int i;
-
-void arg_tok(char* cmdline) {
-    char* token;
-    int num_tokens = 0;
-
-    token = strtok(cmdline, " ");
-    while(token != NULL && num_tokens < MAX_ARG - 1) {
-        cmd_args[counter][num_tokens++] = token;
-        token = strtok(NULL, " ");
-    }
-
-    cmd_args[counter][num_tokens] = NULL;
-    
-}
-
-// stores up to 4 user inputs into an array
-void get_inputs() {
+int main() {
     char input[MAX_CMD][MAX_LEN]; // array of user inputs
-    
+    int counter = 0; // keeps track of amount of inputs
+    char* cmd_args[MAX_ARG]; // array of tokenized inputs
+    int i;
+    char* token;
+    int fd[counter][2]; // number of pipes required depending on number of inputs
+    pid_t pid;
+    int status;
+
+    // gets all user inputs
     // stores user inputs till it hits max or until user enters to exit
     for(i = 0; i < MAX_CMD; i++) {
         read(0, input[i], MAX_LEN);
@@ -59,18 +48,8 @@ void get_inputs() {
         }
 
         input[i][strlen(input[i])-1] = '\0';
-        arg_tok(input[i]);
         counter++;
     }
-}
-
-int main() {
-    int fd[counter][2]; // number of pipes required depending on number of inputs
-    pid_t pid;
-    int status;
-
-    // gets all user inputs
-    get_inputs();
 
     for(i = 0; i < counter - 1; i++) {
         pipe(fd[i]);
@@ -79,6 +58,7 @@ int main() {
     // loops through each cmd and pipes output to the next cmd
     // does this till it gets to the final cmd where it outputs the final cmd
     for(i = 0; i < counter; i++) {
+        int num_tokens = 0;
         pid = fork();
         if(pid == 0) {
             // redirects stdout to pipe out
@@ -94,9 +74,17 @@ int main() {
                 close(fd[i+1][1]);
                 close(fd[i+1][0]);
             } 
+
+            token = strtok(input[i], " ");
+            while(token != NULL && num_tokens < MAX_ARG - 1) {
+                cmd_args[num_tokens++] = token;
+                token = strtok(NULL, " ");
+            }
+
+            cmd_args[num_tokens] = NULL;
             
             // executes the cmd arguments 
-            execvp(cmd_args[i][0], cmd_args[i]);
+            execvp(cmd_args[0], cmd_args);
         }
         
     }

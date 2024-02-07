@@ -18,7 +18,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 
 #define MAX 1024
 
@@ -63,6 +62,7 @@ void get_total_ctxt(char* vol, char* nonvol) {
 
 // gets the model name and number of cpu cores 
 void get_info(char* file, char* name, char* delim) {
+    // combines desired file with proc address for file access
     char pDir[100] = "/proc/";
     strcat(pDir, file);
     
@@ -97,7 +97,7 @@ void print_process_info(char * process_num) {
     // checks for the existence of the process number, prints error and ends program if it isn't
     sprintf(check, "/proc/%s", process_num);
     
-    if(access(check, 0) != 0) {
+    if(fopen(check, "r") == NULL) {
         printf("Process number %s not found\n", process_num);
         return;
     }
