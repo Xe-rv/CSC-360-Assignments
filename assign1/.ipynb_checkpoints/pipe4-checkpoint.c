@@ -20,14 +20,11 @@
 #include <stdlib.h>
 #include <wait.h>
 
-// for debugging
-#include <stdio.h>
-
 #define MAX_ARG 8
 #define MAX_LEN 80
 #define MAX_CMD 4
 
-int counter = 0; // keeps track of amount of inputs
+int cmd_counter = 0; // keeps track of amount of inputs
 char input[MAX_CMD][MAX_LEN]; // stores all of the users inputs
 
 // tokenizes inputs and executes the command
@@ -62,7 +59,7 @@ void get_inputs() {
         }
 
         input[i][strlen(input[i])-1] = '\0';
-        counter++;
+        cmd_counter++;
     }
 }
 
@@ -75,12 +72,12 @@ int main() {
     get_inputs();
 
     // number of pipes required depending on number of inputs
-    pipes = counter - 1;
+    pipes = cmd_counter - 1;
     int fd[pipes][2]; 
 
     // loops through each cmd and pipes output to the next cmd
     // does this till it gets to the final cmd where it outputs the final cmd
-    for(int i = 0; i < counter; i++) {
+    for(int i = 0; i < cmd_counter; i++) {
         pipe(fd[i]);
 
         // creates the child 
@@ -116,7 +113,7 @@ int main() {
     }
 
     // waits for all the child processes to finish
-    for(int i = 0; i < counter; i++) {
+    for(int i = 0; i < cmd_counter; i++) {
         waitpid(pid, &status, 0);
     }
 }
