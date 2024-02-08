@@ -37,15 +37,16 @@ void exe_tok(char* cmdline) {
     char* token;
     int num_tokens = 0;
 
+    // tokenizes the arguments and stores it for execution
     token = strtok(cmdline, " ");
     while(token != NULL && num_tokens < MAX_ARG - 1) {
         cmd_args[num_tokens] = token;
         num_tokens++;
         token = strtok(NULL, " ");
     }
-
     cmd_args[num_tokens] = NULL;
 
+    // excutes the cmd
     execvp(cmd_args[0], cmd_args);
 }
 
@@ -68,7 +69,6 @@ void get_inputs() {
 int main() {
     int pipes;
     pid_t pid;
-    pid_t child_pids[MAX_CMD];
     int status;
 
     // gets all user inputs
@@ -76,12 +76,12 @@ int main() {
 
     // number of pipes required depending on number of inputs
     pipes = counter - 1;
-    int fd[2*pipes]; 
+    int fd[pipes][2]; 
 
     // loops through each cmd and pipes output to the next cmd
     // does this till it gets to the final cmd where it outputs the final cmd
     for(i = 0; i < counter; i++) {
-        pipe(fd + i * 2);
+        pipe(fd[i]);
 
         // creates the child 
         pid = fork();
@@ -90,34 +90,33 @@ int main() {
             
             // redirects stdout to next pipe but only if its not the final cmd
             if(i < pipes) {
-                dup2(fd[i*2+1], 1);
+                dup2(fd[i][1], 1);
             } 
             
             // redirects stdin from previous pipe but only if its not the first cmd
             if (i > 0) {
-                dup2(fd[(i-1)*2], 0);
+                dup2(fd[i-1][0], 0);
             }
 
             // closes every child pipe
-            for(int j = 0; j < 2 * pipes; j++) {
-                close(fd[j]);
+            for(int j = 0; j < pipes; j++) {
+                close(fd[j][0]);
+                close(fd[j][1]);
             }
             
-            // executes the cmd arguments 
+            // tokenizes the input executes the cmd arguments 
             exe_tok(input[i]);
-        }  else {// Store the process ID of the child process
-            child_pids[i] = pid;
-        }
-        
+        } 
     }
     
     // closes every parent pipe
-    for(i = 0; i < 2 * pipes; i++) {
-        close(fd[i]);
+    for(i = 0; i < pipes; i++) {
+        close(fd[i][0]);
+        close(fd[i][1]);
     }
 
-    // waits for child process
+    // waits for all the child processes to finish
     for(i = 0; i < counter; i++) {
-        waitpid(child_pids[i], &status, 0);
+        waitpid(pid, &status, 0);
     }
 }
