@@ -20,7 +20,8 @@
 #include <stdlib.h>
 #include <wait.h>
 
-#define MAX_ARG 8
+// dir and the 7 possible args
+#define MAX_ARG 9 
 #define MAX_LEN 80
 #define MAX_CMD 4
 
