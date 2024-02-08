@@ -20,13 +20,15 @@
 #include <stdlib.h>
 #include <wait.h>
 
+// for debugging
+#include <stdio.h>
+
 #define MAX_ARG 8
 #define MAX_LEN 80
 #define MAX_CMD 4
 
 int counter = 0; // keeps track of amount of inputs
 char input[MAX_CMD][MAX_LEN]; // stores all of the users inputs
-int i;
 
 // tokenizes inputs and executes the command
 void exe_tok(char* cmdline) {
@@ -41,6 +43,7 @@ void exe_tok(char* cmdline) {
         num_tokens++;
         token = strtok(NULL, " ");
     }
+
     cmd_args[num_tokens] = NULL;
 
     // excutes the cmd
@@ -50,7 +53,7 @@ void exe_tok(char* cmdline) {
 // stores up to 4 user inputs into an array
 void get_inputs() {
     // stores user inputs till it hits max or until user enters to exit
-    for(i = 0; i < MAX_CMD; i++) {
+    for(int i = 0; i < MAX_CMD; i++) {
         read(0, input[i], MAX_LEN);
 
         // leaves loop when user just enters without an input
@@ -77,7 +80,7 @@ int main() {
 
     // loops through each cmd and pipes output to the next cmd
     // does this till it gets to the final cmd where it outputs the final cmd
-    for(i = 0; i < counter; i++) {
+    for(int i = 0; i < counter; i++) {
         pipe(fd[i]);
 
         // creates the child 
@@ -107,13 +110,13 @@ int main() {
     }
     
     // closes every parent pipe
-    for(i = 0; i < pipes; i++) {
+    for(int i = 0; i < pipes; i++) {
         close(fd[i][0]);
         close(fd[i][1]);
     }
 
     // waits for all the child processes to finish
-    for(i = 0; i < counter; i++) {
+    for(int i = 0; i < counter; i++) {
         waitpid(pid, &status, 0);
     }
 }
