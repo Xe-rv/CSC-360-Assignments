@@ -20,9 +20,6 @@
 #include <stdlib.h>
 #include <wait.h>
 
-// for debugging
-#include <stdio.h>
-
 #define MAX_ARG 8
 #define MAX_LEN 80
 #define MAX_CMD 4
