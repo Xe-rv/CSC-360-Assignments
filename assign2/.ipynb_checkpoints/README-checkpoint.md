@@ -20,7 +20,7 @@ submissions of which it is said “It worked on Visual Studio!”)
 ## Individual work
 
 This assignment is to be completed by each individual student (i.e.,
-no group work).  Naturally you will want to discuss aspects of themake
+no group work).  Naturally you will want to discuss aspects of the
 problem with fellow students, and such discussions are encouraged.
 However, **sharing of code is strictly forbidden**. If you are still
 unsure about what is permitted or have other questions regarding
