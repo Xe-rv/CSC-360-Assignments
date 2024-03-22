@@ -215,7 +215,7 @@ void handle_instruction(Instruction_t *instruction, int tick) {
 		// New Task Arrival
 		// TODO ... Insert your Code Here
 
-        // initiates new task and gives it an ID
+        // initiates new task in the table
         task_table[task_id-1].id = task_id;
         task_table[task_id-1].current_queue = 1;
         
@@ -308,7 +308,6 @@ void boost(int tick) {
         if(remaining_quantum > 2) {
             remaining_quantum = 2;
         }
-        current_task->current_queue = 1;
     }
 
     // loops to enqueue each lower tasks to queue 1
@@ -350,7 +349,7 @@ void scheduler() {
             priority_task = peek_priority_task();
     }
 
-    if(priority_task != NULL /*&& current_task == NULL*/) {  
+    if(priority_task != NULL) {  
         /* if priority_task queue is higher in priority than the current task, 
          * priority_task pre-empts it and enqueues the current task again, 
          * if not returns and continues the current task 
@@ -361,7 +360,6 @@ void scheduler() {
         } else if (current_task != NULL){
             enqueue(get_queue_by_id(current_task->current_queue), current_task);
         }
-
         
         current_task = dequeue(get_queue_by_id(priority_task->current_queue));
         
@@ -416,7 +414,7 @@ void execute_task(int tick) {
 void update_task_metrics() {
 	// TODO ... Insert your Code Here
 
-    // loops through tas
+    // loops through task table and increments the ones currently in queue
     for(int i = 0; i < MAX_TASKS; i++){
         if(task_table[i].current_queue > 0 && task_table[i].remaining_burst_time > 0 
             && task_table[i].id != current_task->id){

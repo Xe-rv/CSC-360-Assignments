@@ -214,45 +214,46 @@ void kosmos_init() {
 
 void radicalize(char name[], char* atom, int ID)
 {
-        // removes the amount of free atoms
-        num_free_c--;
-        num_free_h -= 3;
-        num_free_o--;
-        gen++;
+    pthread_mutex_lock(&mutex);
+    // removes the amount of free atoms
+    num_free_c--;
+    num_free_h -= 3;
+    num_free_o--;
+    gen++;
     
-        // checks which type of atom triggered the creation to see which threads need to be unlocked
-        if(strncmp(atom, "h", MAX_ATOM_NAME_LEN) == 0){
-            hAtom[hAtomCount] = ID;
-            hAtomCount++;
-        } else {
-            pthread_cond_signal(&wait_h);
-            pthread_cond_wait(&staging_area, &mutex);
-        }
-
-        if(strncmp(atom, "c", MAX_ATOM_NAME_LEN) == 0){
-            cAtom = ID;
-        } else {
-            pthread_cond_signal(&wait_c);
-            pthread_cond_wait(&staging_area, &mutex);
-        }
-
-        if(strncmp(atom, "o", MAX_ATOM_NAME_LEN) == 0){
-            oAtom = ID;
-        } else {
-            pthread_cond_signal(&wait_o);
-            pthread_cond_wait(&staging_area, &mutex);
-        }
-    
+    // checks which type of atom triggered the creation to see which threads need to be unlocked
+    if(strncmp(atom, "h", MAX_ATOM_NAME_LEN) == 0){
+        hAtom[hAtomCount] = ID;
+        hAtomCount++;
+    } else {
         pthread_cond_signal(&wait_h);
         pthread_cond_wait(&staging_area, &mutex);
-        pthread_cond_signal(&wait_h);
-        pthread_cond_wait(&staging_area, &mutex);
+    }
 
-        // logs and prints the radical for checking
-        make_radical(cAtom, oAtom, hAtom[0], hAtom[1], hAtom[2], name);
-        radicals++;
-        hAtomCount = 0;
-        pthread_mutex_unlock(&mutex);
+    if(strncmp(atom, "c", MAX_ATOM_NAME_LEN) == 0){
+        cAtom = ID;
+    } else {
+        pthread_cond_signal(&wait_c);
+        pthread_cond_wait(&staging_area, &mutex);
+    }
+
+    if(strncmp(atom, "o", MAX_ATOM_NAME_LEN) == 0){
+        oAtom = ID;
+    } else {
+        pthread_cond_signal(&wait_o);
+        pthread_cond_wait(&staging_area, &mutex);
+    }
+    
+    pthread_cond_signal(&wait_h);
+    pthread_cond_wait(&staging_area, &mutex);
+    pthread_cond_signal(&wait_h);
+    pthread_cond_wait(&staging_area, &mutex);
+
+    // logs and prints the radical for checking
+    make_radical(cAtom, oAtom, hAtom[0], hAtom[1], hAtom[2], name);
+    radicals++;
+    hAtomCount = 0;
+    pthread_mutex_unlock(&mutex);
 }
 
 
@@ -273,6 +274,7 @@ void *h_ready( void *arg )
 
     // checks if all atoms have been made for the radical and triggers it with the current atom if it is
     if(num_free_h >= 3 && num_free_c >= 1 && num_free_o >= 1) {
+        pthread_mutex_unlock(&mutex);
         radicalize(name, "h", id);
         return NULL;
     }
@@ -310,6 +312,7 @@ void *c_ready( void *arg )
 
     // checks if all atoms have been made for the radical and triggers it with the current atom if it is
     if(num_free_h >= 3 && num_free_c >= 1 && num_free_o >= 1) {
+        pthread_mutex_unlock(&mutex);
         radicalize(name, "c", id);
         return NULL;
     }
@@ -348,6 +351,7 @@ void *o_ready( void *arg )
 
     // checks if all atoms have been made for the radical and triggers it with the current atom if it is
     if(num_free_h >= 3 && num_free_c >= 1 && num_free_o >= 1) {
+        pthread_mutex_unlock(&mutex);
         radicalize(name, "o", id);
         return NULL;
     }
