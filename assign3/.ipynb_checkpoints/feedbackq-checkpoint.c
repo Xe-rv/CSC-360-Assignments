@@ -361,8 +361,7 @@ void scheduler() {
         } else if (current_task != NULL){
             enqueue(get_queue_by_id(current_task->current_queue), current_task);
         }
-
-        
+  
         current_task = dequeue(get_queue_by_id(priority_task->current_queue));
         
         new_time(current_task);
