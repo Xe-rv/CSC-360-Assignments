@@ -261,7 +261,7 @@ Task_t *peek_priority_task() {
 	// TODO ... Insert your Code Here
     Task_t *this_task = NULL;
 
-    // checks for which queues have tasks to be run, chooses the highest priority
+    // checks for which queues have tasks to be run, then chooses the highest priority task
     if(!is_empty(queue_1)) {
         this_task = queue_1->start;
     } else if(!is_empty(queue_2)) {
@@ -283,6 +283,8 @@ Task_t *peek_priority_task() {
 void decrease_task_level(Task_t *task) {
 	task->current_queue = task->current_queue == 3 ? 3 : task->current_queue + 1;
 }
+
+
 /*
  * Function: boost
  * -----------------------------
@@ -303,7 +305,7 @@ void boost(int tick) {
 	// Conduct boost
   	// TODO - Insert your code here
 
-    // sets current tasks remaining quantum to 2 if q > 2
+    // sets current tasks remaining quantum to 2 if q > 2 and re-enqueues
     if(current_task != NULL) {
         if(remaining_quantum > 2) {
             remaining_quantum = 2;
@@ -311,7 +313,7 @@ void boost(int tick) {
         current_task->current_queue = 1;
     }
 
-    // loops to enqueue each lower tasks to queue 1
+    // loops to enqueue each lower task to queue 1
     while(!is_empty(queue_3)) {
         queue_3->start->current_queue = 1;
         enqueue(queue_1, dequeue(queue_3));
@@ -350,7 +352,7 @@ void scheduler() {
             priority_task = peek_priority_task();
     }
 
-    if(priority_task != NULL /*&& current_task == NULL*/) {  
+    if(priority_task != NULL) {  
         /* if priority_task queue is higher in priority than the current task, 
          * priority_task pre-empts it and enqueues the current task again, 
          * if not returns and continues the current task 
@@ -393,6 +395,7 @@ void execute_task(int tick) {
 			(current_task->burst_time - current_task->remaining_burst_time), 
 			current_task->current_queue);
 
+        // if burst time hits zero clear the current task
 		if(current_task->remaining_burst_time == 0) {
 			current_task = NULL;
 		}
@@ -415,7 +418,7 @@ void execute_task(int tick) {
 void update_task_metrics() {
 	// TODO ... Insert your Code Here
 
-    // loops through tas
+    // loops through tasks in the array and increments times based on if their enqueued 
     for(int i = 0; i < MAX_TASKS; i++){
         if(task_table[i].current_queue > 0 && task_table[i].remaining_burst_time > 0 
             && task_table[i].id != current_task->id){
