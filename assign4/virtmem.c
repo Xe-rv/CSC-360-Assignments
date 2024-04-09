@@ -58,6 +58,7 @@ struct page_table_entry {
     long page_num;
     int dirty;
     int free;
+    int ref_bit;
     long this_frame;
     struct page_table_entry *prev;
     struct page_table_entry *next;
@@ -81,6 +82,7 @@ int page_replacement_scheme = REPLACE_NONE;
 long fifo_head;
 struct page_table_entry *lru_head;
 struct page_table_entry *lru_tail;
+int clock_hand = 0;
 
 /*
  * Function to convert a logical address into its corresponding 
@@ -117,7 +119,8 @@ long resolve_address(long logical, int memwrite) {
     /* If frame is not -1, then we can successfully resolve the
      * address and return the result. */
     if (frame != -1) {
-        // Move the accessed page to the front of the LRU list
+        
+        // Move the most recently accessed page to the front of the LRU list
         if (page_replacement_scheme == REPLACE_LRU) {
             if (page_table[frame].prev != NULL) {
                 page_table[frame].prev->next = page_table[frame].next;
@@ -127,7 +130,7 @@ long resolve_address(long logical, int memwrite) {
                     lru_tail = page_table[frame].prev;
                 }
 
-                // Move to the front
+                // Move page to the front
                 page_table[frame].next = lru_head;
                 page_table[frame].prev = NULL;
                 lru_head->prev = &page_table[frame];
@@ -135,8 +138,15 @@ long resolve_address(long logical, int memwrite) {
             }     
                 
         }
+
+        // Sets ref bit 
+        if (page_replacement_scheme == REPLACE_CLOCK) {
+            page_table[frame].ref_bit = TRUE;
+        }
         
         effective = (frame << size_of_frame) | offset;
+
+        // Makes page dirty 
         if (memwrite) {
             page_table[frame].dirty = TRUE;
         }
@@ -163,21 +173,15 @@ long resolve_address(long logical, int memwrite) {
     if (frame != -1) {
         swap_ins++;
     } else {
+        // Determines the replacement scheme
         switch (page_replacement_scheme) {
             case REPLACE_FIFO:
                 // Move head to the next frame after initializing the frame as the first frame in
                 frame = fifo_head;
                 fifo_head = (fifo_head + 1) % size_of_memory;
 
-                // check if the page is dirty, swaps out if it is
-                if (page_table[frame].dirty == TRUE) {
-                    swap_outs++;
-                    page_table[frame].dirty = FALSE;
-                }
-
-                swap_ins++;
-
                 break;
+            
             case REPLACE_LRU:
                 // Find the least recently used page (tail of the list)
                 frame = lru_tail->this_frame;
@@ -190,21 +194,27 @@ long resolve_address(long logical, int memwrite) {
                 lru_tail = lru_tail->prev;
                 lru_head->prev = NULL;
 
-                // check if the page is dirty, swaps out if it is
-                if (page_table[frame].dirty == TRUE) {
-                    swap_outs++;
-                    page_table[frame].dirty = FALSE;
-                }
-
-                swap_ins++;
                 break;
+            
             case REPLACE_CLOCK:
-                // CLOCK algorithm implementation
-                break;
-            default:
-                // Handle unsupported or default case
+                // Moves the clock hand till it hits a ref bit of 0
+                while (page_table[clock_hand].ref_bit == TRUE) {
+                    page_table[clock_hand].ref_bit = FALSE;
+                    clock_hand = (clock_hand + 1) % size_of_memory;
+                }
+                
+                frame = clock_hand;
+                clock_hand = (clock_hand + 1) % size_of_memory;
+
                 break;
         }
+        
+            // Check if the page is dirty, swaps out if it is
+            if (page_table[frame].dirty == TRUE) {
+                swap_outs++;
+                page_table[frame].dirty = FALSE;
+               }
+            swap_ins++;
     }
 
     // Update page table entry for the selected frame
