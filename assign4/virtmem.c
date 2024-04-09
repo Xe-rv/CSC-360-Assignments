@@ -74,6 +74,9 @@ int size_of_memory = 0; /* number of frames */
 int page_replacement_scheme = REPLACE_NONE;
 
 
+// use to keep track of the current head of the fifo queue
+int fifo_head;
+
 /*
  * Function to convert a logical address into its corresponding 
  * physical address. The value returned by this function is the
@@ -111,6 +114,9 @@ long resolve_address(long logical, int memwrite)
      * address and return the result. */
     if (frame != -1) {
         effective = (frame << size_of_frame) | offset;
+        if(memwrite) {
+            page_table[frame].dirty = TRUE;
+        }
         return effective;
     }
 
@@ -128,17 +134,42 @@ long resolve_address(long logical, int memwrite)
 
     /* If we found a free frame, then patch up the
      * page table entry and compute the effective
-     * address. Otherwise return -1.
+     * address. Otherwise use a replacement algorithm.
      */
     if (frame != -1) {
-        page_table[frame].page_num = page;
-        page_table[i].free = FALSE;
         swap_ins++;
-        effective = (frame << size_of_frame) | offset;
-        return effective;
     } else {
-        return -1;
+         switch (page_replacement_scheme) {
+            case REPLACE_FIFO:
+                // Move head to the next frame after initializing the frame as the first frame in
+                frame = fifo_head;
+                fifo_head = (fifo_head + 1) % size_of_memory;  
+
+                // check if the page is dirty, swaps out if it is
+                if(page_table[frame].dirty == TRUE) {
+                    swap_outs++;
+                    page_table[frame].dirty = FALSE;
+                }
+                
+                swap_ins++;
+                
+                break;
+            case REPLACE_LRU:
+                // LRU algorithm implementation
+                break;
+            case REPLACE_CLOCK:
+                // CLOCK algorithm implementation
+                break;
+            default:
+                // Handle unsupported or default case
+                break;
+        }   
     }
+
+    page_table[frame].page_num = page;
+    page_table[frame].free = FALSE;
+    effective = (frame << size_of_frame) | offset;
+    return effective;
 }
 
 
@@ -174,7 +205,7 @@ void display_progress(int percent)
 int setup()
 {
     int i;
-
+    
     page_table = (struct page_table_entry *)malloc(
         sizeof(struct page_table_entry) * size_of_memory
     );
@@ -189,6 +220,9 @@ int setup()
         page_table[i].free = TRUE;
     }
 
+    // initalizes the head of the fifo queue to the first frame
+    fifo_head = 0;
+    
     return -1;
 }
 
@@ -255,7 +289,7 @@ int main(int argc, char **argv)
                 page_replacement_scheme = REPLACE_FIFO;
             } else if (strcmp(s, "lru") == 0) {
                 page_replacement_scheme = REPLACE_LRU;
-            } else if (strcmp(s, "lru") == 0) {
+            } else if (strcmp(s, "clock") == 0) {
                 page_replacement_scheme = REPLACE_CLOCK;
             } else if (strcmp(s, "optimal") == 0) {
                 page_replacement_scheme = REPLACE_OPTIMAL;
